@@ -22,9 +22,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\Version.proj" />
-  
+
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard1.5;net45</TargetFrameworks>
+    <TargetFrameworks>net45</TargetFrameworks>
     <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard1.5' ">$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
     <!--<NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard1.5' ">1.6.0</NetStandardImplicitPackageVersion>-->
 
@@ -47,26 +47,12 @@
   <ItemGroup>
     <Compile Include="..\CommonAssemblyInfo.cs" Link="Properties\CommonAssemblyInfo.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\Lucene.Net.Analysis.Common\Lucene.Net.Analysis.Common.csproj" />
     <ProjectReference Include="..\Lucene.Net.Queries\Lucene.Net.Queries.csproj" />
     <ProjectReference Include="..\Lucene.Net.Sandbox\Lucene.Net.Sandbox.csproj" />
   </ItemGroup>
-
-  <!-- NOTE: Microsoft's recommendation is not to use the ICloneable interface. We put in a FEATURE_CLONEABLE constant in case anyone wants to add it to the build -->
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <DefineConstants>$(DefineConstants);FEATURE_XSLT;FEATURE_SERIALIZABLE</DefineConstants>
-    <DebugType>portable</DebugType>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
-    <PackageReference Include="System.Xml.XmlDocument" Version="4.0.1" />
-  </ItemGroup>
-
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
-    <DebugType>portable</DebugType>
-  </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <DefineConstants>$(DefineConstants);FEATURE_XSLT;FEATURE_SERIALIZABLE;FEATURE_SERIALIZABLE_EXCEPTIONS</DefineConstants>
