@@ -6,7 +6,11 @@ namespace Lucene_Examples
     {
         public static void Main(string[] args)
         {
-            new Lucene_Examples.Lesson_1.LuceneTest();
+            //new Lucene_Examples.Lesson_1.LuceneTest();
+
+            //new Lucene_Examples.Lesson_1.LuceneTestUsing();
+
+            new Lucene_Examples.Lesson_9.Grouping();
         }
     }
 }

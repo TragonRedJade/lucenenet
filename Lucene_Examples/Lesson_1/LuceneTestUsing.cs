@@ -40,6 +40,7 @@ namespace Lucene_Examples.Lesson_1
 
 					indexWriterU.Dispose(true);
 				}
+
 				var indexReader = DirectoryReader.Open(directory);
 
 				var indexSearcher = new IndexSearcher(indexReader);
@@ -48,8 +49,6 @@ namespace Lucene_Examples.Lesson_1
 
                 TopDocs docs = indexSearcher.Search(parser.Parse("text"), 10);
 			}
-
-
         }
     }
 }
