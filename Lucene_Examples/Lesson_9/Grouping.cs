@@ -8,6 +8,7 @@ using Lucene.Net.Store;
 using Lucene.Net.Search.Grouping;
 using Lucene.Net.Util;
 using Lucene.Net.QueryParsers.Classic;
+using System.Text;
 
 namespace Lucene_Examples.Lesson_9
 {
@@ -95,7 +96,9 @@ namespace Lucene_Examples.Lesson_9
 
             //BasicFindRepByNumericRange(directory);
 
-            LookupGroupsByIntAlt(directory);
+            //LookupGroupsByIntAlt(directory);
+
+            TwoPassGroupingSearch(directory);
 
             directory.Dispose();
 		}
@@ -203,24 +206,44 @@ namespace Lucene_Examples.Lesson_9
 			indexReader.Dispose();
 		}
 
-        //Two-pass grouping search (Not working)
+        //Two-pass grouping search with cacheing (kinda working)
         private void TwoPassGroupingSearch(Directory directory)
         {
             var indexReader = DirectoryReader.Open(directory);
 
             var indexSearcher = new IndexSearcher(indexReader);
 
-            GroupingSearch groupingSearch = new GroupingSearch("Category");
+            //GroupingSearch groupingSearch = new GroupingSearch("Repetition");
 
-            TermQuery query = new TermQuery(new Term("Category", "Cat 1"));
+			GroupingSearch groupingSearch = new GroupingSearch("Category");
+
+            groupingSearch.SetGroupSort(new Sort());
+
+            groupingSearch.SetFillSortFields(true);
+
+			groupingSearch.SetCachingInMB(40.0, true);
+
+			TermQuery query = new TermQuery(new Term("Category", "Cat 1"));
+
+			//Query query = NumericRangeQuery.NewInt32Range("Repetition", 1, 2, true, false);
 
             var results = groupingSearch.Search(indexSearcher, query, 0, 10);
 
-            int? total = results.TotalGroupCount;
+
+
+            //indexReader.Dispose();
+
+            //int? total = results.TotalGroupCount;
 
             foreach (var groupDocs in results.Groups)
             {
                 Console.WriteLine("Group: " + groupDocs.GroupValue);
+
+                var biff = groupDocs.GroupValue;
+
+                var biff_type = biff.GetType();
+
+                var groupStringValue = Encoding.ASCII.GetChars(new byte[]{43, 61, 74, 20, 31});
 
                 foreach (var scoreDoc in groupDocs.ScoreDocs)
                 {
