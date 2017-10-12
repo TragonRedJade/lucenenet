@@ -6,6 +6,8 @@ using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Search.Grouping;
+using Lucene.Net.Util;
+using Lucene.Net.QueryParsers.Classic;
 
 namespace Lucene_Examples.Lesson_9
 {
@@ -13,21 +15,23 @@ namespace Lucene_Examples.Lesson_9
     {
         public Grouping()
         {
-			#region Init
+            #region Init
 
-			Directory directory = new RAMDirectory();
+            Directory directory = new RAMDirectory();
 
-			var analyzer = new StandardAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48);
+            var analyzer = new StandardAnalyzer(LuceneVersion.LUCENE_48);
 
-			var config = new IndexWriterConfig(Lucene.Net.Util.LuceneVersion.LUCENE_48, analyzer);
+            var config = new IndexWriterConfig(LuceneVersion.LUCENE_48, analyzer);
 
-			IndexWriter indexWriter = new IndexWriter(directory, config);
+            IndexWriter indexWriter = new IndexWriter(directory, config);
 
             #endregion
 
             #region Add Docs to Index
 
-			FieldType groupEndFieldType = new FieldType();
+            #region Setup Group End Field
+
+            FieldType groupEndFieldType = new FieldType();
 
             groupEndFieldType.IsStored = false;
 
@@ -41,48 +45,89 @@ namespace Lucene_Examples.Lesson_9
 
             Field groupEndField = new Field("groupEnd", "x", groupEndFieldType);
 
+            #endregion
+
             List<Document> documentList = new List<Document>();
 
-			Document doc = new Document();
-			
+            Document doc = new Document();
+
             doc.Add(new StringField("BookId", "B1", Field.Store.YES));
-			
+
             doc.Add(new StringField("Category", "Cat 1", Field.Store.YES));
-			
+
+            doc.Add(new Int32Field("Repetition", 1, Field.Store.YES));
+
             documentList.Add(doc);
-			
+
             doc = new Document();
-			
+
             doc.Add(new StringField("BookId", "B2", Field.Store.YES));
-			
+
             doc.Add(new StringField("Category", "Cat 1", Field.Store.YES));
-			
-            documentList.Add(doc);
-			
+
+			doc.Add(new Int32Field("Repetition", 1, Field.Store.YES));
+
+			documentList.Add(doc);
+
             doc.Add(groupEndField);
-			
+
             indexWriter.AddDocuments(documentList);
 
-			documentList = new List<Document>();
-			
+            documentList = new List<Document>();
+
             doc = new Document();
-			
+
             doc.Add(new StringField("BookId", "B3", Field.Store.YES));
-			
+
             doc.Add(new StringField("Category", "Cat 2", Field.Store.YES));
-			
-            documentList.Add(doc);
-			
+
+			doc.Add(new Int32Field("Repetition", 2, Field.Store.YES));
+
+			documentList.Add(doc);
+
             doc.Add(groupEndField);
-			
+
             indexWriter.AddDocuments(documentList);
 
-            indexWriter.Commit();
+            indexWriter.Dispose();
 
-			#endregion
+            #endregion
 
-			#region Lookup by group value
+            //BasicFindRepByNumericRange(directory);
 
+            LookupGroupsByIntAlt(directory);
+
+            directory.Dispose();
+		}
+
+		//Find Repetition using numeric range query
+		private void BasicFindRepByNumericRange(Directory directory)
+        {
+			var indexReader = DirectoryReader.Open(directory);
+
+			var indexSearcher = new IndexSearcher(indexReader);
+
+            Query query = NumericRangeQuery.NewInt32Range("Repetition", 1, 2, true, false);
+
+		    TopDocs topDocs = indexSearcher.Search(query, 10);
+
+            Console.WriteLine("Total Hits: " + topDocs.TotalHits);
+
+			Console.WriteLine("Results: ");
+
+            foreach (var scoreDoc in topDocs.ScoreDocs)
+            {
+                Document d = indexSearcher.Doc(scoreDoc.Doc);
+
+		        Console.WriteLine("Book Id: " + d.Get("BookId"));
+	        }
+
+			indexReader.Dispose();
+		}
+
+		//Lookup by group string value
+        private void LookupGroupsbyString(Directory directory)
+        {
 			Filter groupEndDocs = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupEnd", "x"))));
 
 			IndexReader indexReader = DirectoryReader.Open(directory);
@@ -101,17 +146,94 @@ namespace Lucene_Examples.Lesson_9
 
 			foreach (var groupDocs in topGroups.Groups)
 			{
-				Console.WriteLine("Group: " + groupDocs.GroupValue);
+			    Console.WriteLine("Group: " + groupDocs.GroupValue);
 
-				foreach (var scoreDoc in groupDocs.ScoreDocs)
-				{
-					doc = indexSearcher.Doc(scoreDoc.Doc);
+			    foreach (var scoreDoc in groupDocs.ScoreDocs)
+			    {
+			        Document doc = indexSearcher.Doc(scoreDoc.Doc);
 
-					Console.WriteLine("Category: " + doc.GetField("Category").GetStringValue() + ", BookId: " + doc.GetField("BookId").GetStringValue());
-				}
+			        Console.WriteLine("Category: " + doc.GetField("Category").GetStringValue() + ", BookId: " + doc.GetField("BookId").GetStringValue());
+			    }
 			}
 
-            #endregion
+			indexReader.Dispose();
+		}
+
+		//Lookup by group string value (Alternative Syntax)
+		private void LookupGroupsByStringAlt(Directory directory)
+        {
+			Filter groupEndDocs = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupEnd", "x"))));
+
+			IndexReader indexReader = DirectoryReader.Open(directory);
+
+			IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+
+			GroupingSearch groupingSearch = new GroupingSearch(groupEndDocs);
+
+			groupingSearch.SetGroupSort(new Sort());
+
+			groupingSearch.SetIncludeScores(true);
+
+			TermQuery query = new TermQuery(new Term("Category", "Cat 1"));
+
+			var groupsResult = groupingSearch.Search(indexSearcher, query, 0, 10); //search(indexSearcher, query, groupOffset, groupLimit);
+
+			indexReader.Dispose();
         }
-    }
+
+		//Lookup by group int value (Alternative Syntax)
+		private void LookupGroupsByIntAlt(Directory directory)
+		{
+			Filter groupEndDocs = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupEnd", "x"))));
+
+			IndexReader indexReader = DirectoryReader.Open(directory);
+
+			IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+
+			GroupingSearch groupingSearch = new GroupingSearch(groupEndDocs);
+
+			groupingSearch.SetGroupSort(new Sort());
+
+			groupingSearch.SetIncludeScores(true);
+
+			Query query = NumericRangeQuery.NewInt32Range("Repetition", 1, 2, true, false);
+
+			var groupsResult = groupingSearch.Search(indexSearcher, query, 0, 10); //search(indexSearcher, query, groupOffset, groupLimit);
+
+			indexReader.Dispose();
+		}
+
+        //Two-pass grouping search (Not working)
+        private void TwoPassGroupingSearch(Directory directory)
+        {
+            var indexReader = DirectoryReader.Open(directory);
+
+            var indexSearcher = new IndexSearcher(indexReader);
+
+            GroupingSearch groupingSearch = new GroupingSearch("Category");
+
+            TermQuery query = new TermQuery(new Term("Category", "Cat 1"));
+
+            var results = groupingSearch.Search(indexSearcher, query, 0, 10);
+
+            int? total = results.TotalGroupCount;
+
+            foreach (var groupDocs in results.Groups)
+            {
+                Console.WriteLine("Group: " + groupDocs.GroupValue);
+
+                foreach (var scoreDoc in groupDocs.ScoreDocs)
+                {
+                    Document doc = indexSearcher.Doc(scoreDoc.Doc);
+
+                    Console.WriteLine("Category: " 
+                                      + doc.GetField("Category").GetStringValue() 
+                                      + ", BookId: " 
+                                      + doc.GetField("BookId").GetStringValue());
+                }
+            }
+
+            indexReader.Dispose();
+		}
+	}
 }
