@@ -217,26 +217,20 @@ namespace Lucene_Examples.Lesson_9
 
 			GroupingSearch groupingSearch = new GroupingSearch("Category");
 
-            //groupingSearch.SetGroupSort(new Sort());
-
             groupingSearch.SetAllGroups(true);
 
             groupingSearch.SetGroupDocsLimit(10);
 
-
-
-            //groupingSearch.SetFillSortFields(true);
-
 			groupingSearch.SetCachingInMB(40.0, true);
 
-			TermQuery query = new TermQuery(new Term("Category", "Cat 1"));
+            MatchAllDocsQuery all_query = new MatchAllDocsQuery();
 
-            //Query query = NumericRangeQuery.NewInt32Range("Repetition", 1, 2, true, false);
+            NumericRangeQuery<int> numeric_query = NumericRangeQuery.NewInt32Range("Repetition", 1, 2, true, false);
 
-            //This gets all results
-            //var topGroups = groupingSearch.Search(indexSearcher, new MatchAllDocsQuery(), 0, 10);
+			TermQuery term_query = new TermQuery(new Term("Category", "Cat 1"));
 
-            var topGroups = groupingSearch.Search(indexSearcher, query, 0, 10);
+            //Use different queries above to test
+            var topGroups = groupingSearch.Search(indexSearcher, term_query, 0, 10);
 
             Console.WriteLine("Total group count: " + topGroups.TotalGroupCount);
 
@@ -246,11 +240,11 @@ namespace Lucene_Examples.Lesson_9
             {
                 Console.WriteLine("Group: " + ((BytesRef)groupDocs.GroupValue).Utf8ToString());
 
-                foreach (var scoreDoc in groupDocs.ScoreDocs)
+				foreach (var scoreDoc in groupDocs.ScoreDocs)
                 {
                     var doc = indexSearcher.Doc(scoreDoc.Doc);
 
-                    Console.WriteLine("Category: " + doc.GetField("Category").GetStringValue() + ", BookId: " + doc.GetField("BookId").GetStringValue());
+                    Console.WriteLine("Category: " + doc.GetField("Category").GetStringValue() + ", BookId: " + doc.GetField("BookId").GetStringValue() + ", Rep: " + doc.GetField("Repetition").GetInt32Value());
                 }
             }
 
