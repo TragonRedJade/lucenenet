@@ -217,42 +217,40 @@ namespace Lucene_Examples.Lesson_9
 
 			GroupingSearch groupingSearch = new GroupingSearch("Category");
 
-            groupingSearch.SetGroupSort(new Sort());
+            //groupingSearch.SetGroupSort(new Sort());
 
-            groupingSearch.SetFillSortFields(true);
+            groupingSearch.SetAllGroups(true);
+
+            groupingSearch.SetGroupDocsLimit(10);
+
+
+
+            //groupingSearch.SetFillSortFields(true);
 
 			groupingSearch.SetCachingInMB(40.0, true);
 
 			TermQuery query = new TermQuery(new Term("Category", "Cat 1"));
 
-			//Query query = NumericRangeQuery.NewInt32Range("Repetition", 1, 2, true, false);
+            //Query query = NumericRangeQuery.NewInt32Range("Repetition", 1, 2, true, false);
 
-            var results = groupingSearch.Search(indexSearcher, query, 0, 10);
+            //This gets all results
+            //var topGroups = groupingSearch.Search(indexSearcher, new MatchAllDocsQuery(), 0, 10);
 
+            var topGroups = groupingSearch.Search(indexSearcher, query, 0, 10);
 
+            Console.WriteLine("Total group count: " + topGroups.TotalGroupCount);
 
-            //indexReader.Dispose();
+            Console.WriteLine("Total group hit count: " + topGroups.TotalGroupedHitCount);
 
-            //int? total = results.TotalGroupCount;
-
-            foreach (var groupDocs in results.Groups)
+            foreach (var groupDocs in topGroups.Groups)
             {
-                Console.WriteLine("Group: " + groupDocs.GroupValue);
-
-                var biff = groupDocs.GroupValue;
-
-                var biff_type = biff.GetType();
-
-                var groupStringValue = Encoding.ASCII.GetChars(new byte[]{43, 61, 74, 20, 31});
+                Console.WriteLine("Group: " + ((BytesRef)groupDocs.GroupValue).Utf8ToString());
 
                 foreach (var scoreDoc in groupDocs.ScoreDocs)
                 {
-                    Document doc = indexSearcher.Doc(scoreDoc.Doc);
+                    var doc = indexSearcher.Doc(scoreDoc.Doc);
 
-                    Console.WriteLine("Category: " 
-                                      + doc.GetField("Category").GetStringValue() 
-                                      + ", BookId: " 
-                                      + doc.GetField("BookId").GetStringValue());
+                    Console.WriteLine("Category: " + doc.GetField("Category").GetStringValue() + ", BookId: " + doc.GetField("BookId").GetStringValue());
                 }
             }
 
